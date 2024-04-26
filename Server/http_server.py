@@ -32,9 +32,19 @@ class HTTPServer:
 
     def serve_client(self, conn):
         #try:
-        request = self.parse_request(conn)
-        response = self.handle_request(request)  # TODO
-        self.send_response(conn, response)
+        # rfile = conn.makefile('rb')
+        # data = rfile.readline().decode('utf-8')
+
+        data = conn.recv(8192).decode()
+
+        print(data)
+        if data:
+            request = self.parse_request(conn, data)
+            response = self.handle_request(request)  # TODO
+            self.send_response(conn, response)
+        else:
+            response = Response('200', 'OK', {'Date': '1', 'Server': '2'}, 'null_packet')
+            self.send_response(conn, response)
         #except ConnectionResetError:
             #conn = None
         #except Exception as e:
@@ -43,19 +53,22 @@ class HTTPServer:
         if conn:
             conn.close()
 
-    def parse_request(self, conn):
+    def parse_request(self, conn, data):
 
-        rfile = conn.makefile('rb')
+        #rfile = conn.makefile('rb')
 
         # content = rfile.read()
         # print(content)
-        #method, target, ver = self.parse_request_line(rfile)
-        method = 'GET'
-        target = '/'
-        ver = 'http'
+
+
+
+        method, target, ver = self.parse_request_line(data)
+        # method = 'GET'
+        # target = '/'
+        # ver = 'http'
         #print(method, target, ver)
-        headers = self.parse_request_headers(rfile)
-        body = self.parse_request_body(rfile)
+        headers = self.parse_request_headers(data)
+        body = self.parse_request_body(data)
         # host = headers.get('Host') TODO все ошибки обрабатываем в хэндл реквест и отправляем пользователю
         # if not host:
         #     raise Exception('Bad request')
@@ -63,20 +76,20 @@ class HTTPServer:
         #                 f'{self._server_name}:{self._port}'):
         #     raise Exception('Not found')  # ??
 
-        return Request(method, target, ver, headers, rfile)
+        return Request(method, target, ver, headers, data)
 
 
-    def parse_request_line(self, rfile):
-        line = rfile.readline().decode('iso-8859-1')
-        line = line.split(' ')
-        print(line)
-        method = line[0]
-        target = line[1]
-        ver = line[2]
-        print(method)
-        print(target)
-        print(ver)
-        return line
+    def parse_request_line(self, data):
+        # line = rfile.readline().decode('utf-8')
+        # #line = rfile.readline()
+        # line = line.split(' ')
+
+        line = data.split('\r\n')[0]
+        parse_line = line.split(' ')
+
+        print(parse_line)
+
+        return parse_line
 
     def parse_request_body(self, rfile):
         # content = rfile.read().decode('iso-8859-1') тут исключение
@@ -85,31 +98,21 @@ class HTTPServer:
         body = ''
         return body
 
-    def parse_request_headers(self, rfile): # TODO исключение в 93 строке + подумать с тем что когда считали 1 строку в другом методе сдвинется ли каретка
-        headers = []
-        frst_line = rfile.readline()
-        i=0
-        while i < 5:
-            i+=1
-            line = rfile.readline(MAX_LINE + 1)
-            if len(line) > MAX_LINE:
-                raise Exception('Header line is too long')
+    def parse_request_headers(self, data): # TODO исключение в 93 строке + подумать с тем что когда считали 1 строку в другом методе сдвинется ли каретка
+        headers_dict = {}
 
-            if line in (b'\r\n', b'\n', b''):
-                # завершаем чтение заголовков
+        split_data = data.split('\r\n')
+        split_data.pop(0)
+        for header in split_data:
+            #print(header)
+            if header == '':
                 break
+            split_header= header.split(': ')
+            headers_dict[split_header[0]] = split_header[1]
+        print(headers_dict)
 
-            headers.append(line)
-            if len(headers) > MAX_HEADERS:
-                raise Exception('Too many headers')
+        return headers_dict
 
-        hdict = {}
-        for h in headers:
-            h = h.decode('iso-8859-1')
-            k, v = h.split(':', 1)
-            hdict[k] = v
-
-        return hdict
 
     def handle_request(self, req):
         headers = {'Date': '1', 'Server': '2'}
