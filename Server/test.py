@@ -1,51 +1,19 @@
-import socket
+import json
 
 
-class HTTPServer:
-    def __init__(self, host, port, server_name):
-        self._host = host
-        self._port = port
-        self._server_name = server_name
-
-    def serve_forever(self):  # TODO: многопточка в этом методе
-        serv_sock = socket.socket(
-            socket.AF_INET,
-            socket.SOCK_STREAM,
-            proto=0)
-
-        try:
-            serv_sock.bind((self._host, self._port))
-            serv_sock.listen()
-
-            while True:
-                conn, _ = serv_sock.accept()
-                try:
-                    self.serve_client(conn)
-                except Exception as e:
-                    print('Client serving failed', e)
-        finally:
-            serv_sock.close()
-
-    def serve_client(self, conn):
-        response = 'hello world'
-        wfile = conn.makefile('wb')
-        wfile.write(response.encode('iso-8859-1'))
-
-        wfile.flush()
-        wfile.close()
-
-        if conn:
-            conn.close()
+# def get_file_path():
+#     with open("config/config.json", "r") as file:
+#         data = json.load(file)
+#     host_name = "index.html"
+#     for virtual_host in data["virtual_hosts"]:
+#         if virtual_host["host_name"] == host_name:
+#             document_root = virtual_host["document_root"]
+#             return document_root
+#
+#
+# print(get_file_path())
 
 
-if __name__ == '__main__':
-
-    host = 'localhost'
-    port = 80
-    name = 'name'
-
-    serv = HTTPServer(host, port, name)
-    try:
-        serv.serve_forever()
-    except KeyboardInterrupt:
-        pass
+with open("C:\\Users\\user\\PycharmProjects\\WebServer\\Server\\resources\\www\\index.html", 'r', encoding='utf-8') as file:
+    data = file.read()
+    print(data)

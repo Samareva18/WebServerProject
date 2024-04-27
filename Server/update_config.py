@@ -10,22 +10,22 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 # Путь к каталогу, который необходимо мониторить
 directory_to_watch = os.path.join(base_dir, 'resources', 'www')
 
-# Путь к конфигурационному файлу Apache
-apache_config_file = os.path.join(base_dir, 'config', 'config.json')
+# Путь к конфигурационному файлу
+config_file = os.path.join(base_dir, 'config', 'config.json')
 
-# Функция для обновления конфигурационного файла Apache
+# Функция для обновления конфигурационного файла
 def update_apache_config(new_file):
-    with open(apache_config_file, 'r') as f:
+    with open(config_file, 'r') as f:
         config_data = json.load(f)
 
     # Проверяем, что информация о новом файле еще не добавлена
     if new_file not in config_data:
-        config_data[new_file] = {
-            "ServerName": "ex.com",
-            "DocumentRoot": f"/resources/www/{new_file}"
+        config_data['virtual_hosts'] = {
+            "host_name": f"{new_file}",
+            "document_root": f"{directory_to_watch}\\{new_file}"
         }
 
-        with open(apache_config_file, 'w') as f:
+        with open(config_file, 'w') as f:
             json.dump(config_data, f, indent=4)
 
         print(f"Добавлена информация о новом виртуальном хосте для файла {new_file}")

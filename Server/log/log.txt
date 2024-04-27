@@ -1,3 +1,2 @@
-127.0.0.1 - - [10/Oct/2021:15:30:45 +0000] "GET /index.html HTTP/1.1" 200 345 "-"
-"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)
-Chrome/94.0.4606.71 Safari/537.36"
+('127.0.0.1', 55221) -- 2024-04-27 06:54:18.739189  GET /favicon.ico HTTP/1.1 500
+('127.0.0.1', 55329) -- 2024-04-27 06:56:45.551158  GET /favicon.ico HTTP/1.1 500 

@@ -7,6 +7,22 @@ MAX_LINE = 64 * 1024
 MAX_HEADERS = 100
 
 
+class Log:
+    def __init__(self, addr, date, frst_line, status):
+        self.addr = addr
+        self.date = date
+        self.frst_line = frst_line
+        self.status = status
+
+    def get_string_repres(self):
+        return f'{self.addr} -- {self.date}  {self.frst_line} {self.status} \n'
+
+    def add_log_inf(self):
+        with open("log/log.txt", 'a', encoding='utf-8') as f:
+            data = self.get_string_repres()
+            f.write(data)
+
+
 class HandleRequest:
 
     def __init__(self, request):
@@ -14,13 +30,13 @@ class HandleRequest:
 
     def handle_request(self, req):
         status = None
-        # try:
-        headers = self.fill_headers(req)
-        body = self.create_body(req)
-        # except:
-        #     status = '500'
-        #     return Response(status, 'Internal error', {}, '')
-        # status = '200'
+        try:
+            headers = self.fill_headers(req)
+            body = self.create_body(req)
+        except:
+            status = '500'
+            return Response(status, 'Internal error', {}, '')
+        status = '200'
         return Response(status, 'OK', headers, body)
 
     def get_file_ext(self, req):
@@ -29,7 +45,7 @@ class HandleRequest:
         return file_extension
 
     def get_file_path(self, req):
-        with open("C:\\Users\\user\\PycharmProjects\\WebServer\\Server\\config\\config.json", "r", encoding='utf-8') as file: #TODO исключение
+        with open("config/config.json", "r", encoding='utf-8') as file:
             data = json.load(file)
         target = req.target
         host_name = target[1:]
@@ -40,7 +56,7 @@ class HandleRequest:
 
     def define_content_type(self, req):
         file_extension = self.get_file_ext(req)
-        with open("C:\\Users\\user\\PycharmProjects\\WebServer\\Server\\config\\config.json", "r") as file:
+        with open("config/config.json", "r") as file:
             data = json.load(file)
 
         content_type_map = data["content_type_map"][0]
@@ -70,7 +86,7 @@ class HandleRequest:
     def define_reason(self):
         pass
 
-    def fill_headers(self, req):  # TODO в завимисоти от статуса, если не ошибка
+    def fill_headers(self, req):
         headers = {}
         headers['Date'] = str(datetime.datetime.now())
         # headers['Server'] = ''
@@ -88,6 +104,7 @@ class HTTPServer:
         self._host = host
         self._port = port
         self._server_name = server_name
+        self.log = Log('', '', '', '')
 
     def serve_forever(self):  # TODO: многопточка в этом методе
         serv_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, proto=0)
@@ -97,8 +114,11 @@ class HTTPServer:
             serv_sock.listen()
 
             while True:
-                conn, _ = serv_sock.accept()
+                conn, addr = serv_sock.accept()
+                self.log.addr = addr
+                self.log.date = datetime.datetime.now()
                 self.serve_client(conn)
+
                 # try:
                 #     self.serve_client(conn)
                 # except Exception as e:
@@ -113,7 +133,7 @@ class HTTPServer:
 
         data = conn.recv(8192).decode()
 
-        print(data)
+        #print(data)
         if data:
             request = self.parse_request(data)
             response = self.handle_request(request)  # TODO
@@ -133,33 +153,24 @@ class HTTPServer:
         method, target, ver = self.parse_request_line(data)
         headers = self.parse_request_headers(data)
         body = self.parse_request_body(data)
-        # host = headers.get('Host') TODO все ошибки обрабатываем в хэндл реквест и отправляем пользователю
-        # if not host:
-        #     raise Exception('Bad request')
-        # if host not in (self._server_name,
-        #                 f'{self._server_name}:{self._port}'):
-        #     raise Exception('Not found')  # ??
 
         return Request(method, target, ver, headers, data)
 
     def parse_request_line(self, data):
 
         line = data.split('\r\n')[0]
+        self.log.frst_line = line
         parse_line = line.split(' ')
-
-        print(parse_line)
 
         return parse_line
 
     def parse_request_body(self, data):
-        # content = rfile.read().decode('iso-8859-1') тут исключение
         request_parts = data.split('\r\n\r\n')
         body = request_parts[-1]
         return body
 
     def parse_request_headers(self, data):
         headers_dict = {}
-
         split_data = data.split('\r\n')
         split_data.pop(0)
         for header in split_data:
@@ -167,13 +178,14 @@ class HTTPServer:
                 break
             split_header = header.split(': ')
             headers_dict[split_header[0]] = split_header[1]
-        print(headers_dict)
 
         return headers_dict
 
     def handle_request(self, req):
         handle_req = HandleRequest(req)
         resp = handle_req.handle_request(req)
+        self.log.status = resp.status
+        self.log.add_log_inf()
         return resp
 
     # формируем готовый ответ и отправляем его
@@ -190,24 +202,9 @@ class HTTPServer:
 
         if resp.body:
             wfile.write(resp.body.encode('utf-8'))
-            # wfile.write(resp.body)
 
         wfile.flush()
         wfile.close()
-
-    def send_error(self, conn, err):  # TODO: возможно внести в респонз
-        try:
-            status = err.status
-            reason = err.reason
-            body = (err.body or err.reason).encode('utf-8')
-        except:
-            status = 500
-            reason = b'Internal Server Error'
-            body = b'Internal Server Error'
-        resp = Response(status, reason,
-                        [('Content-Length', len(body))],  # TODO написать объект респонз
-                        body)
-        self.send_response(conn, resp)
 
 
 class Response:
