@@ -7,6 +7,82 @@ MAX_LINE = 64 * 1024
 MAX_HEADERS = 100
 
 
+class HandleRequest:
+
+    def __init__(self, request):
+        self.request = request
+
+    def handle_request(self, req):
+        status = None
+        # try:
+        headers = self.fill_headers(req)
+        body = self.create_body(req)
+        # except:
+        #     status = '500'
+        #     return Response(status, 'Internal error', {}, '')
+        # status = '200'
+        return Response(status, 'OK', headers, body)
+
+    def get_file_ext(self, req):
+        resource = req.target
+        file_extension = resource.split('.')[-1]
+        return file_extension
+
+    def get_file_path(self, req):
+        with open("C:\\Users\\user\\PycharmProjects\\WebServer\\Server\\config\\config.json", "r", encoding='utf-8') as file: #TODO исключение
+            data = json.load(file)
+        target = req.target
+        host_name = target[1:]
+        for virtual_host in data["virtual_hosts"]:
+            if virtual_host["host_name"] == host_name:
+                document_root = virtual_host["document_root"]
+                return document_root
+
+    def define_content_type(self, req):
+        file_extension = self.get_file_ext(req)
+        with open("C:\\Users\\user\\PycharmProjects\\WebServer\\Server\\config\\config.json", "r") as file:
+            data = json.load(file)
+
+        content_type_map = data["content_type_map"][0]
+
+        if file_extension in content_type_map:
+            return content_type_map[file_extension]
+        else:
+            return 'text/html'
+
+    def create_body(self, req):
+        file_extension = self.get_file_ext(req)
+        file_path = self.get_file_path(req)
+        if file_extension == 'txt' or 'html':
+            with open(file_path, 'r', encoding='utf-8') as file:
+                data = file.read()
+            return data
+
+        elif file_extension == 'json':
+            with open(file_path, 'r') as file:
+                data = json.load(file)
+            return data
+
+    def calculate_content_lehgth(self, req):
+        body = self.create_body(req)
+        return len(body)
+
+    def define_reason(self):
+        pass
+
+    def fill_headers(self, req):  # TODO в завимисоти от статуса, если не ошибка
+        headers = {}
+        headers['Date'] = str(datetime.datetime.now())
+        # headers['Server'] = ''
+        headers['Content-Length'] = str(self.calculate_content_lehgth(req))
+        headers['Content-Type'] = self.define_content_type(req)
+        return headers
+
+    # def handle_request(self, req):
+    #     if self.request.method == 'GET':
+    #         self.handle_get_request(req)
+
+
 class HTTPServer:
     def __init__(self, host, port, server_name):
         self._host = host
@@ -31,7 +107,7 @@ class HTTPServer:
             serv_sock.close()
 
     def serve_client(self, conn):
-        #try:
+        # try:
         # rfile = conn.makefile('rb')
         # data = rfile.readline().decode('utf-8')
 
@@ -39,34 +115,22 @@ class HTTPServer:
 
         print(data)
         if data:
-            request = self.parse_request(conn, data)
+            request = self.parse_request(data)
             response = self.handle_request(request)  # TODO
             self.send_response(conn, response)
         else:
             response = Response('200', 'OK', {'Date': '1', 'Server': '2'}, 'null_packet')
             self.send_response(conn, response)
-        #except ConnectionResetError:
-            #conn = None
-        #except Exception as e:
-            #self.send_error(conn, e)
+        # except ConnectionResetError:
+        # conn = None
+        # except Exception as e:
+        # self.send_error(conn, e)
 
         if conn:
             conn.close()
 
-    def parse_request(self, conn, data):
-
-        #rfile = conn.makefile('rb')
-
-        # content = rfile.read()
-        # print(content)
-
-
-
+    def parse_request(self, data):
         method, target, ver = self.parse_request_line(data)
-        # method = 'GET'
-        # target = '/'
-        # ver = 'http'
-        #print(method, target, ver)
         headers = self.parse_request_headers(data)
         body = self.parse_request_body(data)
         # host = headers.get('Host') TODO все ошибки обрабатываем в хэндл реквест и отправляем пользователю
@@ -78,11 +142,7 @@ class HTTPServer:
 
         return Request(method, target, ver, headers, data)
 
-
     def parse_request_line(self, data):
-        # line = rfile.readline().decode('utf-8')
-        # #line = rfile.readline()
-        # line = line.split(' ')
 
         line = data.split('\r\n')[0]
         parse_line = line.split(' ')
@@ -91,36 +151,30 @@ class HTTPServer:
 
         return parse_line
 
-    def parse_request_body(self, rfile):
+    def parse_request_body(self, data):
         # content = rfile.read().decode('iso-8859-1') тут исключение
-        # request_parts = content.split('\r\n\r\n')
-        # body = request_parts[-1]
-        body = ''
+        request_parts = data.split('\r\n\r\n')
+        body = request_parts[-1]
         return body
 
-    def parse_request_headers(self, data): # TODO исключение в 93 строке + подумать с тем что когда считали 1 строку в другом методе сдвинется ли каретка
+    def parse_request_headers(self, data):
         headers_dict = {}
 
         split_data = data.split('\r\n')
         split_data.pop(0)
         for header in split_data:
-            #print(header)
             if header == '':
                 break
-            split_header= header.split(': ')
+            split_header = header.split(': ')
             headers_dict[split_header[0]] = split_header[1]
         print(headers_dict)
 
         return headers_dict
 
-
     def handle_request(self, req):
-        headers = {'Date': '1', 'Server': '2'}
-        return Response('200', 'OK', headers, 'test')
-
-    # def handle_request(self, req):
-    #     if req.method == 'GET':
-    #         self.handle_get_request(req)
+        handle_req = HandleRequest(req)
+        resp = handle_req.handle_request(req)
+        return resp
 
     # формируем готовый ответ и отправляем его
     def send_response(self, conn, resp):
@@ -135,8 +189,8 @@ class HTTPServer:
         wfile.write(b'\r\n')
 
         if resp.body:
-            wfile.write(resp.body.encode('iso-8859-1'))
-            #wfile.write(resp.body)
+            wfile.write(resp.body.encode('utf-8'))
+            # wfile.write(resp.body)
 
         wfile.flush()
         wfile.close()
@@ -155,28 +209,11 @@ class HTTPServer:
                         body)
         self.send_response(conn, resp)
 
-    def create_body(self, req):
-        host_name = req.target
-        with open("config/config.json", "r") as file:
-            data = json.load(file)
-
-        # Запрашиваемый host_name
-        requested_host_name = "example.com"
-
-        # Поиск document_root по host_name
-        for virtual_host in data["virtual_hosts"]:
-            if virtual_host["host_name"] == requested_host_name:
-                document_root = virtual_host["document_root"]
-                print(f"Для host_name '{requested_host_name}' найден document_root: {document_root}")
-                break
-        else:
-            print(f"Host_name '{requested_host_name}' не найден")
 
 class Response:
     def __init__(self, status, comment, headers, body):
         self.status = status
         self.comment = comment
-        self.date = datetime.datetime.now()  # TODO подумать как сделать лучше
         self.headers = headers
         self.body = body
 
@@ -188,43 +225,6 @@ class Request:
         self.version = version
         self.headers = headers
         self.body = body
-
-
-# class HandleRequest:
-#
-#     def __init__(self, request):
-#         self.request = request
-#
-#     def handle_get_request(self): ->Response
-#
-#
-#     def define_content_type(self):
-#         pass
-#
-#     def create_body(self):
-#         pass
-#
-#     def calculate_content_lehgth(self):
-#         pass
-#
-#     def is_target_exist(self):
-#
-#     def define_status(self):
-#         pass
-#
-#     def define_reason(self):
-#         pass
-#
-#     def fill_headers(self): #TODO в завимисоти от статуса, если не ошибка
-#         headers = [[]]
-#         headers['Date'] = ''
-#         headers['Server'] = ''
-#         headers['Content-Length'] = self.calculate_content_lehgth()
-#         headers['Content-Type'] = self.define_content_type()
-#
-#     def handle_request(self):
-#         if self.request.method == 'GET':
-#             self.handle_get_request()
 
 
 if __name__ == '__main__':
