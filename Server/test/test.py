@@ -14,6 +14,6 @@ import json
 # print(get_file_path())
 
 
-with open("C:\\Users\\user\\PycharmProjects\\WebServer\\Server\\resources\\www\\index.html", 'r', encoding='utf-8') as file:
+with open("/Server/resources/www/index.html", 'r', encoding='utf-8') as file:
     data = file.read()
     print(data)
