@@ -1,41 +1,46 @@
 import json
 import os
-import time
-
-
-#TODO переделать чтобы правильно проверял наличие записи в конфиге  и чтобы правильно составлял запись
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
-
-# Путь к каталогу, который необходимо мониторить
 directory_to_watch = os.path.join(base_dir, 'resources', 'www')
-
-# Путь к конфигурационному файлу
 config_file = os.path.join(base_dir, 'config', 'config.json')
 
-# Функция для обновления конфигурационного файла
-def update_apache_config(new_file):
+
+def update_apache_config(new_host):
     with open(config_file, 'r') as f:
         config_data = json.load(f)
 
-    # Проверяем, что информация о новом файле еще не добавлена
-    if new_file not in config_data:
-        config_data['virtual_hosts'] = {
-            "host_name": f"{new_file}",
-            "document_root": f"{directory_to_watch}\\{new_file}"
-        }
+    contains_src_html = any(host.get("host_name") == new_host for host in config_data["virtual_hosts"])
+
+    if not contains_src_html:
+        config_data['virtual_hosts'].append({
+            "host_name": f"{new_host}",
+            "document_root": f"{directory_to_watch}\\{new_host}\\"
+        })
 
         with open(config_file, 'w') as f:
             json.dump(config_data, f, indent=4)
 
-        print(f"Добавлена информация о новом виртуальном хосте для файла {new_file}")
 
-# Мониторим каталог на наличие новых файлов
-while True:
-    new_files = [f for f in os.listdir(directory_to_watch) if os.path.isfile(os.path.join(directory_to_watch, f))]
+def check_for_new_folders(folder_path):
+    existing_folders = set(os.listdir(folder_path))
 
-    for new_file in new_files:
-        update_apache_config(new_file)
+    # Сохраняем список папок до проверки
+    initial_folders = existing_folders.copy()
+    existing_folders = set(os.listdir(folder_path))
+    for folder in existing_folders:
+        update_apache_config(folder)
 
-    # Ждем некоторое время перед повторной проверкой
-    time.sleep(10)
+    while True:
+        existing_folders = set(os.listdir(folder_path))
+        new_folders = existing_folders - initial_folders
+
+        if new_folders:
+            for folder in new_folders:
+                update_apache_config(folder)
+
+            # Обновляем список папок для следующей проверки
+            initial_folders = existing_folders.copy()
+
+
+check_for_new_folders(directory_to_watch)
