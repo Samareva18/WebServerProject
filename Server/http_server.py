@@ -6,7 +6,7 @@ import handle_request
 import request
 import response
 import log
-# from Server import update_config
+from Server import update_config
 
 
 class HTTPServer:
@@ -20,8 +20,8 @@ class HTTPServer:
     async def serve_forever(self):
         serv_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, proto=0)
 
-        # folder_thread = threading.Thread(target=update_config.check_for_new_folders())
-        # folder_thread.start()
+        folder_thread = threading.Thread(target=update_config.check_for_new_folders())
+        folder_thread.start()
 
         try:
             serv_sock.bind((self._host, self._port))
@@ -48,8 +48,8 @@ class HTTPServer:
 
         if data:
             request = self.parse_request(data)
-            resp = self.handle_request(request) #блокирующая??
-            await self.send_response(conn, resp)  #блокирующая
+            resp = self.handle_request(request)
+            await self.send_response(conn, resp)
         else:
             resp = response.Response('200', 'OK', {'Date': '1', 'Server': '2'}, 'null_packet')
             await self.send_response(conn, resp)
