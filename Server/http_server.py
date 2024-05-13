@@ -1,11 +1,12 @@
+import asyncio
 import datetime
 import socket
-import sys
 import threading
 import handle_request
 import request
 import response
 import log
+# from Server import update_config
 
 
 class HTTPServer:
@@ -16,21 +17,21 @@ class HTTPServer:
         self._server_name = server_name
         self.log = log.Log('', '', '', '')
 
-    def serve_forever(self):
+    async def serve_forever(self):
         serv_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, proto=0)
+
+        # folder_thread = threading.Thread(target=update_config.check_for_new_folders())
+        # folder_thread.start()
 
         try:
             serv_sock.bind((self._host, self._port))
             serv_sock.listen()
 
             while True:
-                conn, addr = serv_sock.accept()
+                conn, addr = serv_sock.accept() #блокирующая
                 self.log.addr = addr
                 self.log.date = datetime.datetime.now()
-                # self.serve_client(conn)
-
-                client_thread = threading.Thread(target=self.serve_client, args=(conn,))
-                client_thread.start()
+                await asyncio.create_task(self.serve_client(conn))
 
                 # try:
                 #     self.serve_client(conn)
@@ -39,18 +40,19 @@ class HTTPServer:
         finally:
             serv_sock.close()
 
-    def serve_client(self, conn):
+    async def serve_client(self, conn):
         # try:
 
-        data = conn.recv(8192).decode()
+        data = conn.recv(8192).decode() #блокирующая
+        #print(data)
 
         if data:
             request = self.parse_request(data)
-            resp = self.handle_request(request)
-            self.send_response(conn, resp)
+            resp = self.handle_request(request) #блокирующая??
+            await self.send_response(conn, resp)  #блокирующая
         else:
             resp = response.Response('200', 'OK', {'Date': '1', 'Server': '2'}, 'null_packet')
-            self.send_response(conn, resp)
+            await self.send_response(conn, resp)
         # except ConnectionResetError:
         # conn = None
         # except Exception as e:
@@ -99,14 +101,14 @@ class HTTPServer:
         return resp
 
     # формируем готовый ответ и отправляем его
-    def send_response(self, conn, resp):
+    async def send_response(self, conn, resp): # вся функция блокирующая
         wfile = conn.makefile('wb')
         status_line = f'HTTP/1.1 {resp.status} {resp.comment}\r\n'
         wfile.write(status_line.encode('iso-8859-1'))
         if resp.headers:  # TODO возможно убрать эту проверку
             for (key, value) in resp.headers.items():
                 header_line = f'{key}: {value}\r\n'
-                wfile.write(header_line.encode('iso-8859-1'))
+                wfile.write(header_line.encode('iso-8859-1'))  #блокирующая
 
         wfile.write(b'\r\n')
 
@@ -118,13 +120,12 @@ class HTTPServer:
 
 
 if __name__ == '__main__':
-
     host = '127.0.0.1'
     port = 80
     name = 'name'
 
     serv = HTTPServer(host, port, name)
     try:
-        serv.serve_forever()
+        asyncio.run(serv.serve_forever())
     except KeyboardInterrupt:
         pass
