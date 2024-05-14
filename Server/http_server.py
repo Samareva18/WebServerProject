@@ -6,7 +6,9 @@ import handle_request
 import request
 import response
 import log
-from Server import update_config
+
+
+# from Server import update_config
 
 
 class HTTPServer:
@@ -20,15 +22,15 @@ class HTTPServer:
     async def serve_forever(self):
         serv_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, proto=0)
 
-        folder_thread = threading.Thread(target=update_config.check_for_new_folders())
-        folder_thread.start()
+        # folder_thread = threading.Thread(target=update_config.check_for_new_folders())
+        # folder_thread.start()
 
         try:
             serv_sock.bind((self._host, self._port))
             serv_sock.listen()
 
             while True:
-                conn, addr = serv_sock.accept() #блокирующая
+                conn, addr = serv_sock.accept()  # блокирующая
                 self.log.addr = addr
                 self.log.date = datetime.datetime.now()
                 await asyncio.create_task(self.serve_client(conn))
@@ -43,25 +45,32 @@ class HTTPServer:
     async def serve_client(self, conn):
         # try:
 
-        data = conn.recv(8192).decode() #блокирующая
-        #print(data)
+        data = conn.recv(8192).decode()  # блокирующая
+        print(data)
 
+        req = ''
         if data:
-            request = self.parse_request(data)
+            req = self.parse_request(data)
             resp = self.handle_request(request)
-            await self.send_response(conn, resp)
-        else:
-            resp = response.Response('200', 'OK', {'Date': '1', 'Server': '2'}, 'null_packet')
             await self.send_response(conn, resp)
         # except ConnectionResetError:
         # conn = None
         # except Exception as e:
         # self.send_error(conn, e)
 
-        if conn:
+        if not self.is_keep_alive(req):
             conn.close()
 
-    def parse_request(self, data):
+    def is_keep_alive(self, req):
+        if req:
+            headers_d = req.headers
+            for header in headers_d:
+                if header == 'Connection':
+                    if headers_d[header] == 'keep-alive':
+                        return True
+        return False
+
+    def parse_request(self, data):  # TODO сделать parserequest отдельным классом
         method, target, ver = self.parse_request_line(data)
         headers = self.parse_request_headers(data)
         body = self.parse_request_body(data)
@@ -101,14 +110,14 @@ class HTTPServer:
         return resp
 
     # формируем готовый ответ и отправляем его
-    async def send_response(self, conn, resp): # вся функция блокирующая
+    async def send_response(self, conn, resp):  # вся функция блокирующая
         wfile = conn.makefile('wb')
         status_line = f'HTTP/1.1 {resp.status} {resp.comment}\r\n'
         wfile.write(status_line.encode('iso-8859-1'))
         if resp.headers:  # TODO возможно убрать эту проверку
             for (key, value) in resp.headers.items():
                 header_line = f'{key}: {value}\r\n'
-                wfile.write(header_line.encode('iso-8859-1'))  #блокирующая
+                wfile.write(header_line.encode('iso-8859-1'))  # блокирующая
 
         wfile.write(b'\r\n')
 

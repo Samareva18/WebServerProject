@@ -24,15 +24,21 @@ class HandleRequest:
         file_extension = resource.split('.')[-1]
         return file_extension
 
+    def get_host_header(self, req):
+        headers_d = req.headers
+        host = headers_d['Host']
+        return host
+
     def get_file_path(self, req):
         with open("config/config.json", "r", encoding='utf-8') as file:
             data = json.load(file)
         target = req.target
-        host_name = target[1:]
+        host_name = self.get_host_header(req)
         for virtual_host in data["virtual_hosts"]:
             if virtual_host["host_name"] == host_name:
-                document_root = virtual_host["document_root"]
-                return document_root
+                host_root = virtual_host["host_root"]
+        file_path = host_root + target
+        return file_path
 
     def define_content_type(self, req):
         file_extension = self.get_file_ext(req)
