@@ -1,0 +1,65 @@
+{
+    "virtual_hosts": [
+        {
+            "host_name": "example.com",
+            "host_root": "C:\\Users\\user\\PycharmProjects\\WebServer\\Server\\resources\\www\\example.com\\"
+        },
+        {
+            "host_name": "site1.com",
+            "host_root": "C:\\Users\\user\\PycharmProjects\\WebServer\\Server\\resources\\www\\site1.com\\"
+        },
+        {
+            "host_name": "site2.com",
+            "host_root": "C:\\Users\\user\\PycharmProjects\\WebServer\\Server\\resources\\www\\site2.com\\"
+        }
+    ],
+
+    "content_type_map": [
+        {
+            "html": "text/html",
+            "htm": "text/html",
+            "txt": "text/plain",
+            "json": "application/json",
+            "css": "text/css",
+            "js": "application/javascript",
+            "png": "image/png",
+            "jpg": "image/jpeg",
+            "jpeg": "image/jpeg",
+            "gif": "image/gif"
+        }
+    ],
+
+    "errors_code": [
+        {
+            "code": "200",
+            "comment": "OK",
+            "page_root": ""
+        },
+        {
+            "code": "400",
+            "comment": "Bad Request",
+            "page_root": "C:\\Users\\user\\PycharmProjects\\WebServer\\Server\\resources\\errors\\400.html"
+        },
+        {
+            "code": "404",
+            "comment": "Not Found",
+            "page_root": "C:\\Users\\user\\PycharmProjects\\WebServer\\Server\\resources\\errors\\404.html"
+        },
+        {
+            "code": "500",
+            "comment": "Server Internal Error",
+            "page_root": "C:\\Users\\user\\PycharmProjects\\WebServer\\Server\\resources\\errors\\500.html"
+        },
+        {
+            "code": "501",
+            "comment": "Not Implemented",
+            "page_root": "C:\\Users\\user\\PycharmProjects\\WebServer\\Server\\resources\\errors\\501.html"
+        }
+    ],
+
+    "methods": [
+        {
+            "method": "GET"
+        }
+    ]
+}

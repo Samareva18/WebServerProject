@@ -4,8 +4,8 @@ import socket
 import threading
 import handle_request
 import request
-import response
 import log
+import parse_request
 
 
 # from Server import update_config
@@ -51,7 +51,7 @@ class HTTPServer:
         req = ''
         if data:
             req = self.parse_request(data)
-            resp = self.handle_request(request)
+            resp = self.handle_request(req)
             await self.send_response(conn, resp)
         # except ConnectionResetError:
         # conn = None
@@ -70,41 +70,42 @@ class HTTPServer:
                         return True
         return False
 
-    def parse_request(self, data):  # TODO сделать parserequest отдельным классом
-        method, target, ver = self.parse_request_line(data)
-        headers = self.parse_request_headers(data)
-        body = self.parse_request_body(data)
+    def parse_request(self, data):
+        pars_req = parse_request.ParseRequest(data, self.log)
+        method, target, ver = pars_req.parse_request_line()
+        headers = pars_req.parse_request_headers()
+        body = pars_req.parse_request_body()
 
-        return request.Request(method, target, ver, headers, data)
+        return request.Request(method, target, ver, headers, body)
 
-    def parse_request_line(self, data):
-
-        line = data.split('\r\n')[0]
-        self.log.frst_line = line
-        parse_line = line.split(' ')
-
-        return parse_line
-
-    def parse_request_body(self, data):
-        request_parts = data.split('\r\n\r\n')
-        body = request_parts[-1]
-        return body
-
-    def parse_request_headers(self, data):
-        headers_dict = {}
-        split_data = data.split('\r\n')
-        split_data.pop(0)
-        for header in split_data:
-            if header == '':
-                break
-            split_header = header.split(': ')
-            headers_dict[split_header[0]] = split_header[1]
-
-        return headers_dict
+    # def parse_request_line(self, data):
+    #
+    #     line = data.split('\r\n')[0]
+    #     self.log.frst_line = line
+    #     parse_line = line.split(' ')
+    #
+    #     return parse_line
+    #
+    # def parse_request_body(self, data):
+    #     request_parts = data.split('\r\n\r\n')
+    #     body = request_parts[-1]
+    #     return body
+    #
+    # def parse_request_headers(self, data):
+    #     headers_dict = {}
+    #     split_data = data.split('\r\n')
+    #     split_data.pop(0)
+    #     for header in split_data:
+    #         if header == '':
+    #             break
+    #         split_header = header.split(': ')
+    #         headers_dict[split_header[0]] = split_header[1]
+    #
+    #     return headers_dict
 
     def handle_request(self, req):
         handle_req = handle_request.HandleRequest(req)
-        resp = handle_req.handle_request(req)
+        resp = handle_req.handle_request()
         self.log.status = resp.status
         self.log.add_log_inf()
         return resp
@@ -114,7 +115,7 @@ class HTTPServer:
         wfile = conn.makefile('wb')
         status_line = f'HTTP/1.1 {resp.status} {resp.comment}\r\n'
         wfile.write(status_line.encode('iso-8859-1'))
-        if resp.headers:  # TODO возможно убрать эту проверку
+        if resp.headers:
             for (key, value) in resp.headers.items():
                 header_line = f'{key}: {value}\r\n'
                 wfile.write(header_line.encode('iso-8859-1'))  # блокирующая
