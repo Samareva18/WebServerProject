@@ -33,6 +33,15 @@ class HandleRequest:
         if not_impl:
             raise errors.NotImplementedMethodError
 
+    def check_bad_request(self):
+        req = self.request
+        if req.method or req.target or req.version is None:
+            raise errors.BadRequestError
+
+        if 'Host' not in req.headers:
+            raise errors.BadRequestError
+
+
     def handle_error(self, error_code):
         status = ''
         comment = ''
@@ -112,6 +121,7 @@ class HandleRequest:
 
     def handle_request(self):
         try:
+            self.check_bad_request()
             self.check_method_implement()
 
             if self.request.method == 'GET':
@@ -119,3 +129,5 @@ class HandleRequest:
 
         except errors.NotImplementedMethodError:
             return self.handle_error('501')
+        except errors.BadRequestError:
+            return self.handle_error('400')

@@ -7,8 +7,8 @@ class ParseRequest:
     def parse_request_line(self):
         data = self.request
         line = data.split('\r\n')[0]
-        self.log.frst_line = line
         parse_line = line.split(' ')
+        self.log.frst_line = line
 
         return parse_line
 
