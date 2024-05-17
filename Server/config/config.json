@@ -31,11 +31,6 @@
 
     "errors_code": [
         {
-            "code": "200",
-            "comment": "OK",
-            "page_root": ""
-        },
-        {
             "code": "400",
             "comment": "Bad Request",
             "page_root": "C:\\Users\\user\\PycharmProjects\\WebServer\\Server\\resources\\errors\\400.html"

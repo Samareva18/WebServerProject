@@ -9,17 +9,16 @@ class HandleRequest:
     def __init__(self, request):
         self.request = request
 
-    def handle_get_request(self):
-        try:
-            headers = self.fill_headers()
-            body = self.create_body()
-        except FileNotFoundError:
-            return self.handle_error('404')
-        except Exception as e:
-            status = '500'
-            return response.Response(status, 'Internal error', {}, e)
-        status = '200'
-        return response.Response(status, 'OK', headers, body)
+    # def handle_get_request(self):
+    #     try:
+    #         headers = self.fill_headers()
+    #         body = self.create_body()
+    #
+    #     except Exception as e:
+    #         status = '500'
+    #         return response.Response(status, 'Internal error', {}, e)
+    #     status = '200'
+    #     return response.Response(status, 'OK', headers, body)
 
     def check_method_implement(self):
         req = self.request
@@ -35,9 +34,8 @@ class HandleRequest:
 
     def check_bad_request(self):
         req = self.request
-        if req.method or req.target or req.version is None:
+        if req.method is None or req.target is None or req.version is None:
             raise errors.BadRequestError
-
         if 'Host' not in req.headers:
             raise errors.BadRequestError
 
@@ -56,6 +54,9 @@ class HandleRequest:
                     body = file.read()
 
         return response.Response(status, comment, {}, body)
+
+    def handle_success_request(self, headers, body):
+        return response.Response('200', 'OK', headers, body)
 
     def get_file_ext(self):
         req = self.request
@@ -107,7 +108,7 @@ class HandleRequest:
                 data = json.load(file)
             return data
 
-    def calculate_content_lehgth(self):
+    def calculate_content_length(self):
         body = self.create_body()
         return len(body)
 
@@ -115,7 +116,7 @@ class HandleRequest:
         headers = {}
         headers['Date'] = str(datetime.datetime.now())
         # headers['Server'] = ''
-        headers['Content-Length'] = str(self.calculate_content_lehgth())
+        headers['Content-Length'] = str(self.calculate_content_length())
         headers['Content-Type'] = self.define_content_type()
         return headers
 
@@ -124,10 +125,15 @@ class HandleRequest:
             self.check_bad_request()
             self.check_method_implement()
 
-            if self.request.method == 'GET':
-                return self.handle_get_request()
+            headers = self.fill_headers()
+            body = self.create_body()
 
+        except FileNotFoundError:
+            return self.handle_error('404')
         except errors.NotImplementedMethodError:
             return self.handle_error('501')
         except errors.BadRequestError:
             return self.handle_error('400')
+        except Exception:
+            return self.handle_error('500')
+        return self.handle_success_request(headers, body)
