@@ -9,17 +9,6 @@ class HandleRequest:
     def __init__(self, request):
         self.request = request
 
-    # def handle_get_request(self):
-    #     try:
-    #         headers = self.fill_headers()
-    #         body = self.create_body()
-    #
-    #     except Exception as e:
-    #         status = '500'
-    #         return response.Response(status, 'Internal error', {}, e)
-    #     status = '200'
-    #     return response.Response(status, 'OK', headers, body)
-
     def check_method_implement(self):
         req = self.request
         not_impl = True
@@ -38,7 +27,6 @@ class HandleRequest:
             raise errors.BadRequestError
         if 'Host' not in req.headers:
             raise errors.BadRequestError
-
 
     def handle_error(self, error_code):
         status = ''
@@ -115,7 +103,6 @@ class HandleRequest:
     def fill_headers(self):
         headers = {}
         headers['Date'] = str(datetime.datetime.now())
-        # headers['Server'] = ''
         headers['Content-Length'] = str(self.calculate_content_length())
         headers['Content-Type'] = self.define_content_type()
         return headers
