@@ -6,9 +6,7 @@ import handle_request
 import request
 import log
 import parse_request
-
-
-# from Server import update_config
+import update_config
 
 
 class HTTPServer:
@@ -22,15 +20,19 @@ class HTTPServer:
     async def serve_forever(self):
         serv_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, proto=0)
 
-        # folder_thread = threading.Thread(target=update_config.check_for_new_folders())
-        # folder_thread.start()
+        # # upd = update_config.UpdateConfig()
+        # # folder_thread = threading.Thread(target=upd.check_for_new_folders())
+        # # folder_thread.start()
+        #
+        # upd = update_config.UpdateConfig()
+        # await upd.check_for_new_folders()
 
         try:
             serv_sock.bind((self._host, self._port))
             serv_sock.listen()
 
             while True:
-                conn, addr = serv_sock.accept()  # блокирующая
+                conn, addr = serv_sock.accept()
                 self.log.addr = addr
                 self.log.date = datetime.datetime.now()
                 await asyncio.create_task(self.serve_client(conn))
@@ -88,7 +90,6 @@ class HTTPServer:
         self.log.add_log_inf()
         return resp
 
-    # формируем готовый ответ и отправляем его
     async def send_response(self, conn, resp):
         wfile = conn.makefile('wb')
         status_line = f'HTTP/1.1 {resp.status} {resp.comment}\r\n'
