@@ -1,4 +1,6 @@
 import socket
+import tempfile
+import webbrowser
 
 HOST = 'localhost'
 PORT = 80

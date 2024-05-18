@@ -13,7 +13,6 @@
             "host_root": "C:\\Users\\user\\PycharmProjects\\WebServer\\Server\\resources\\www\\site2.com\\"
         }
     ],
-
     "content_type_map": [
         {
             "html": "text/html",
@@ -28,7 +27,6 @@
             "gif": "image/gif"
         }
     ],
-
     "errors_code": [
         {
             "code": "400",
@@ -51,7 +49,6 @@
             "page_root": "C:\\Users\\user\\PycharmProjects\\WebServer\\Server\\resources\\errors\\501.html"
         }
     ],
-
     "methods": [
         {
             "method": "GET"

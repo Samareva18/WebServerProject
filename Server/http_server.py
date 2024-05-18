@@ -20,12 +20,8 @@ class HTTPServer:
     async def serve_forever(self):
         serv_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, proto=0)
 
-        # # upd = update_config.UpdateConfig()
-        # # folder_thread = threading.Thread(target=upd.check_for_new_folders())
-        # # folder_thread.start()
-        #
-        # upd = update_config.UpdateConfig()
-        # await upd.check_for_new_folders()
+        self.update_config()
+
 
         try:
             serv_sock.bind((self._host, self._port))
@@ -62,6 +58,11 @@ class HTTPServer:
 
         if not self.is_keep_alive(req):
             conn.close()
+
+    def update_config(self):
+        upd_conf = update_config.UpdateConfig()
+        folder_thread = threading.Thread(target=upd_conf.check_for_new_folders)
+        folder_thread.start()
 
     def is_keep_alive(self, req):
         if req:
